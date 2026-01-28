@@ -50,7 +50,7 @@ venv.bak/
 Thumbs.db
 
 # Frontend
-node_modules/
+frontend/node_modules/
 /dist
 /tmp
 /out-tsc
@@ -74,3 +74,6 @@ htmlcov/
 .coverage.*
 coverage.xml
 *.cover
+
+backend/__pycache__
+backend/Nodes/__pycache__
