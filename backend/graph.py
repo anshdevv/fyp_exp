@@ -30,6 +30,8 @@ class ChatState(TypedDict, total=False):
     appointment_id: int     # To save notes later
     medical_info: list     # Stores the Q&A history
 
+    current_node: str  # To track cwhere we are
+
 # --- 2. Create the graph ---
 def create_graph():
     graph = StateGraph(ChatState)   # ✅ Pass schema here
@@ -41,10 +43,18 @@ def create_graph():
     graph.add_node("medical_triage", MedicalTriage())      # Add Triage Node
     graph.add_edge(START, "classify_intent")
 
+        # --- Conditional routing from intent classifier ---
+    def decide_next_node(state):
+        # If booking in progress → continue booking
+        if state.get("booking_step") and state["booking_step"] != "done":
+            return "book_appointment"
+        # Otherwise → use intent
+        return state.get("intent", "general_query")
+
 # conditional routing
     graph.add_conditional_edges(
         "classify_intent",
-        lambda state: state.get("intent"),
+        decide_next_node,
         {
             "recommend_doctor": "recommend_doctor",
             "book_appointment": "book_appointment",

@@ -5,12 +5,13 @@ import re
 
 class BookAppointment:
     def __call__(self, state):
+        print("======== Reached Book Appointment function ========")
         user_input = state.get("user_input", "").strip()
         print(state)
         
         # --- PHASE 1: REGISTRATION STATE MACHINE ---
         # We determine "who" is booking before we process "what" they are booking.
-        
+        IsNewUser = False
         step = state.get("booking_step")
         patient_data = state.get("patient_data", {})
         
@@ -41,11 +42,14 @@ class BookAppointment:
             phone = phone_match.group(0)
             
             # DB Lookup
+            print("\nLooking up phone in DB:", phone)
             res = supabase.table("Patient").select("*").eq("phone", phone).execute()
             
             if res.data:
                 # User Found
+                print("\nUser found in DB:", res.data)
                 patient = res.data[0]
+                print("\nPatient record:", patient)
                 state["patient_id"] = patient["id"]
                 state["patient_data"] = patient
                 # Proceed to Booking Logic
@@ -55,6 +59,7 @@ class BookAppointment:
                 patient_data["phone"] = phone
                 state["patient_data"] = patient_data
                 state["response"] = "I don't see an account with this number. What is your Full Name?"
+                IsNewUser = True
                 state["booking_step"] = "ask_name"
                 return state
 
@@ -73,10 +78,10 @@ class BookAppointment:
             new_user = {
                 "Name": patient_data["name"],
                 "phone": patient_data["phone"],
-                "email": patient_data["email"]
+               # "email": patient_data["email"]
             }
             try:
-                res = supabase.table("Patients").insert(new_user).execute()
+                res = supabase.table("Patient").insert(new_user).execute()
                 if res.data:
                     state["patient_id"] = res.data[0]["id"]
                     step = "attempt_booking"
@@ -84,6 +89,7 @@ class BookAppointment:
                     state["response"] = "System error creating profile."
                     return state
             except Exception as e:
+                print("Error occured after getting email and inserting in Patient table")
                 state["response"] = f"Database Error: {str(e)}"
                 return state
 
@@ -102,9 +108,13 @@ class BookAppointment:
             patient_id = state.get("patient_id")
 
             # --- DATE LOGIC ---
-            if not user_date_str:
-                state["response"] = f"Thanks {state.get('patient_data', {}).get('Name')}. What date would you like to book for?"
+            if not user_date_str:   
+                if IsNewUser:
+                    state["response"] = f"Thanks {state.get('patient_data', {}).get('name')}. What date would you like to book for?"
+                else:
+                    state["response"] = f"Thanks {state.get('patient_data', {}).get('Name')}. What date would you like to book for?"
                 state["booking_step"] = "attempt_booking" # Stay here
+                print("Printing value of state after fetching its name using the phone")
                 return state
 
             # Handle relative dates (Your logic)

@@ -27,6 +27,9 @@ def load_symptom_map():
 
 class IntentClassifier:
     def __call__(self, state):
+        print("========== Reached Intent Classifier function ======")
+        print("State received from chat:", state)
+        
         if state.get("triage_active"):
             state["intent"] = "medical_triage"
             return state
@@ -111,6 +114,7 @@ Return **only valid JSON** with the following fields:
         time = result.get("time")
         doctor_name = result.get("doctor_name","")
         print(state)
+        #print("Current Classified intent",state["intent"])
 
         # doctor_name=result."doctor_name")
 
